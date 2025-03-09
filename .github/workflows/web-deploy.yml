@@ -5,6 +5,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -20,14 +25,11 @@ jobs:
           version: "latest"
           actions-cache-folder: "emsdk-cache"
 
-      - name: Install Odin
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y llvm clang make
-          git clone --depth 1 https://github.com/odin-lang/Odin
-          cd Odin
-          make
-          echo "$(pwd)" >> $GITHUB_PATH
+      - name: Setup Odin
+        uses: laytan/setup-odin@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release: "dev-2025-02"
 
       - name: Verify Odin installation
         run: odin version
@@ -37,9 +39,14 @@ jobs:
           chmod +x ./scripts/web_build.sh
           ./scripts/web_build.sh
 
-      - name: Deploy to GitHub Pages 🚀
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          branch: gh-pages
-          folder: build/web
-          clean: true
+          path: "build/web"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
