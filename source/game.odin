@@ -1,30 +1,20 @@
-package main
+package source
 
-import "core:fmt"
+import "core:c"
 import "core:math"
 import rl "vendor:raylib"
+
+run: bool
 
 MAP_SIZE :: 16
 BLOCK_SIZE :: 1.0
 
-Block :: struct {
-	type: BlockType,
-}
-
-BlockType :: enum {
-	BLOCK_AIR,
-	BLOCK_GRASS,
-	BLOCK_DIRT,
-	BLOCK_STONE,
-	BLOCK_WOOD,
-	BLOCK_LEAVES,
-	BLOCK_COUNT,
-}
-
 camera: rl.Camera3D
 blocks: [MAP_SIZE][MAP_SIZE]Block
 
-main :: proc() {
+init :: proc() {
+	run = true
+
 	for x := 0; x < MAP_SIZE; x += 1 {
 		for z := 0; z < MAP_SIZE; z += 1 {
 			if ((x + z) % 2 == 0) {
@@ -35,6 +25,7 @@ main :: proc() {
 		}
 	}
 
+	rl.SetConfigFlags({.WINDOW_RESIZABLE, .VSYNC_HINT})
 	rl.InitWindow(800, 600, "Minecraft")
 	rl.SetTargetFPS(60)
 	camera = rl.Camera3D {
@@ -44,13 +35,33 @@ main :: proc() {
 		fovy       = 60.0,
 		projection = rl.CameraProjection.PERSPECTIVE,
 	}
-	cubePosition := rl.Vector3{0.0, 0.0, 0.0}
-	for !rl.WindowShouldClose() {
-		updateGame()
-		drawGame()
+}
+
+update :: proc() {
+	updateGame()
+	drawGame()
+}
+
+shutdown :: proc() {
+	rl.CloseWindow()
+}
+
+should_run :: proc() -> bool {
+	when ODIN_OS != .JS {
+		// Never run this proc in browser. It contains a 16 ms sleep on web!
+		if rl.WindowShouldClose() {
+			run = false
+		}
 	}
 
-	rl.CloseWindow()
+	return run
+}
+
+
+// In a web build, this is called when browser changes size. Remove the
+// `rl.SetWindowSize` call if you don't want a resizable game.
+parent_window_size_changed :: proc(w, h: int) {
+	rl.SetWindowSize(c.int(w), c.int(h))
 }
 
 
@@ -87,6 +98,7 @@ drawGame :: proc() {
 
 	rl.EndDrawing()
 }
+
 
 updateGame :: proc() {
 	if (rl.IsKeyDown(rl.KeyboardKey.RIGHT)) {camera.position.x += 0.2}

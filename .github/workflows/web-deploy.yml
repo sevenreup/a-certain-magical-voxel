@@ -1,0 +1,45 @@
+name: Build and Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v11
+        with:
+          version: "latest"
+          actions-cache-folder: "emsdk-cache"
+
+      - name: Install Odin
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y llvm clang make
+          git clone --depth 1 https://github.com/odin-lang/Odin
+          cd Odin
+          make
+          echo "$(pwd)" >> $GITHUB_PATH
+
+      - name: Verify Odin installation
+        run: odin version
+
+      - name: Build for Web 🔧
+        run: |
+          chmod +x ./scripts/web_build.sh
+          ./scripts/web_build.sh
+
+      - name: Deploy to GitHub Pages 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: build/web
+          clean: true

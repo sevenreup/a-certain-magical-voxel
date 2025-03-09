@@ -1,4 +1,4 @@
-package core
+package source
 
 Block :: struct {
 	type: BlockType,
