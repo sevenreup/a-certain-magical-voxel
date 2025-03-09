@@ -4,4 +4,5 @@ build-web:
 build:
 	./scripts/desktop_build.sh
 run:
+	mkdir -p build/desktop
 	odin run flavors/desktop -out:build/desktop/game.exe
